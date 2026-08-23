@@ -83,18 +83,19 @@ boss sprites: Crawler-Titan 48x28 (walk 8f on rails, salvo telegraph 2f),
 Archivist core 32x32 (idle rotate 6f, purge charge 4f); ending slides
 320x180 x2.
 
-## 5. Sector tileset art direction (ties to STORYBOARD)
+## 5. Sector art direction
 
-| Sector | Ground story | Tile mood |
-| ------ | ------------ | --------- |
-| Glassfields | rust-belt lots, ash grass creeping back | ash greens + rust decals, tram rails |
-| Meridian Yards | factory floor | concrete grays-green, conveyor stripes, hazard chevrons |
-| Kill Line | old front line | scorched earth, craters, shell casings decals |
-| Concord Overlook | mountain early-warning post | cold gray-blue rock, snow patches, radar dishes |
-| Lighthouse Array | broadcast complex | bone-white tiles, cable runs, beacon light pools |
+Per-chapter visual identities (palette bias, signature props, light/tint
+modifiers, unique gameplay-visual hooks for all NINE chapters) live in
+`docs/plan/LEVEL_STYLE_MATRIX.md` - that file is canonical for level looks;
+this section stays the palette-law reference.
 
-Each theme reuses the same ramps - variation via decal density and hue
-bias, never new colors.
+Quick index: Ch1 Glassfields "Ashfall Rust" / Ch2 Switchboard Tunnels
+"Underground Exchange" / Ch3 Meridian Yards "The Line Never Sleeps" /
+Ch4 Kill Line "Scorched Parade" / Ch5 Reservoir Seven "Turbine Rain" /
+Ch6 Concord Overlook "White Noise Watch" / Ch7 Downline Substation
+"Live Wire" / Ch8 Antenna Field "Carrier Wave Choir" / Ch9 Lighthouse Array
+"Sixteen Minutes".
 
 ## 6. Fonts (free, OFL)
 

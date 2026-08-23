@@ -81,6 +81,11 @@ Missing files are silently skipped by the engine, so build incrementally.
 
 ## Track briefs with ready-to-paste prompts
 
+The six tracks below are the STATE LAYER (menu, wave intensity, win/lose).
+Each chapter additionally has its own unique THEME track - see
+`docs/plan/LEVEL_STYLE_MATRIX.md` for all nine level styles, prompts and
+filenames (`theme_ch1.ogg` ... `theme_ch9.ogg`).
+
 Each prompt already contains the style anchor's intent; paste as-is into
 Pro, iterate in Clip first by pasting just the first two sentences.
 
