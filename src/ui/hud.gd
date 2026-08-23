@@ -14,9 +14,13 @@ var _hint_label: Label
 var _message: Label
 var _objective_label: Label
 var _status_label: Label
+var _prompt_label: Label
+var _controls_label: Label
 var _card: PanelContainer
 var _card_title: Label
 var _card_body: Label
+var _help_panel: PanelContainer
+var _inventory_labels := {}
 
 var _restarting := false
 var _game_over := false
@@ -63,6 +67,24 @@ func _ready() -> void:
 	_status_label.set_anchors_preset(Control.PRESET_CENTER_TOP)
 	_status_label.position.y = 48.0
 
+	_prompt_label = _make_label(root_ui, 17)
+	_prompt_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_prompt_label.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
+	_prompt_label.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	_prompt_label.grow_vertical = Control.GROW_DIRECTION_BEGIN
+	_prompt_label.position.y = -84.0
+	_prompt_label.modulate = Color(1.0, 0.95, 0.7)
+
+	_controls_label = _make_label(root_ui, 12)
+	_controls_label.text = "WASD move   B build   E use/place   TAB cycle   H help   ESC menu"
+	_controls_label.modulate = Color(1, 1, 1, 0.45)
+	_controls_label.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
+	_controls_label.grow_horizontal = Control.GROW_DIRECTION_BEGIN
+	_controls_label.grow_vertical = Control.GROW_DIRECTION_BEGIN
+	_controls_label.position = Vector2(-16.0, -24.0)
+
+	_build_inventory(root_ui)
+	_build_help(root_ui)
 	_build_card(root_ui)
 
 	_message = Label.new()
@@ -88,6 +110,68 @@ func set_objective(text: String) -> void:
 	_objective_label.text = text
 
 
+## Contextual interaction line above the controls bar; "" clears it.
+func set_prompt(text: String) -> void:
+	_prompt_label.text = text
+
+
+func _build_inventory(parent: Control) -> void:
+	var panel := PanelContainer.new()
+	panel.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+	panel.grow_horizontal = Control.GROW_DIRECTION_BEGIN
+	panel.position = Vector2(-16.0, 12.0)
+	var column := VBoxContainer.new()
+	column.add_theme_constant_override("separation", 2)
+	panel.add_child(column)
+	for entry in [["scrap", "SCRAP"], ["cells", "CELLS"], ["walls", "WALLS"], ["turrets", "TURRETS"]]:
+		var label := Label.new()
+		label.text = "%s  0" % entry[1]
+		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+		label.add_theme_font_size_override("font_size", 14)
+		column.add_child(label)
+		_inventory_labels[entry[0]] = label
+	parent.add_child(panel)
+
+
+## Re-reads resources + structure counts from the level container.
+func refresh_inventory(container: Node) -> void:
+	if container == null:
+		return
+	var counts := {"scrap": GameState.get_count(&"scrap"), "cells": GameState.get_count(&"cells"),
+			"walls": 0, "turrets": 0}
+	for child in container.get_children():
+		if child is Wall and not child.is_queued_for_deletion():
+			counts["walls"] += 1
+		elif child is Turret and not child.is_queued_for_deletion():
+			counts["turrets"] += 1
+	for key in _inventory_labels:
+		var label: Label = _inventory_labels[key]
+		label.text = "%s  %d" % [key.to_upper(), counts[key]]
+
+
+## Point the inventory at the level container and keep it live.
+func bind_inventory(container: Node) -> void:
+	if container == null:
+		return
+	refresh_inventory(container)
+	GameState.resources_changed.connect(func() -> void: refresh_inventory(container))
+	Events.building_placed.connect(func(_kind: StringName, _at: Vector2) -> void: refresh_inventory(container))
+	Events.structure_removed.connect(func(_kind: StringName, _at: Vector2) -> void: refresh_inventory(container))
+	Events.loot_collected.connect(func(_kind: StringName, _amount: int) -> void: refresh_inventory(container))
+
+
+static func count_structures(container: Node) -> Dictionary:
+	var result := {"walls": 0, "turrets": 0}
+	if container == null:
+		return result
+	for child in container.get_children():
+		if child is Wall and not child.is_queued_for_deletion():
+			result["walls"] += 1
+		elif child is Turret and not child.is_queued_for_deletion():
+			result["turrets"] += 1
+	return result
+
+
 ## Short-lived top-center announcement (EMP warnings, dark cycles...).
 func show_status(text: String) -> void:
 	_status_label.text = text
@@ -109,6 +193,38 @@ func show_card(title: String, body: String, seconds := 5.0) -> void:
 
 func _hide_card() -> void:
 	_card.visible = false
+
+
+func _build_help(parent: Control) -> void:
+	_help_panel = PanelContainer.new()
+	_help_panel.visible = false
+	_help_panel.set_anchors_preset(Control.PRESET_FULL_RECT)
+	var margin := MarginContainer.new()
+	for side in ["margin_left", "margin_right", "margin_top", "margin_bottom"]:
+		margin.add_theme_constant_override(side, 48)
+	_help_panel.add_child(margin)
+	var column := VBoxContainer.new()
+	column.add_theme_constant_override("separation", 6)
+	margin.add_child(column)
+	var heading := Label.new()
+	heading.text = "FIELD MANUAL"
+	heading.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	heading.add_theme_font_size_override("font_size", 30)
+	column.add_child(heading)
+	for line in [
+		"WASD / ARROWS - move (your rig fires at the nearest machine automatically)",
+		"B - toggle BUILD mode      TAB - cycle blueprint      E - place blueprint",
+		"E - outside build mode: use context actions (repair damaged structures)",
+		"Kills drop SCRAP and CELLS; CELLS power turrets, both fund construction",
+		"R - retry after death / continue after victory      ESC - abandon to menu",
+		"H - open and close this manual",
+	]:
+		var label := Label.new()
+		label.text = line
+		label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		label.add_theme_font_size_override("font_size", 15)
+		column.add_child(label)
+	parent.add_child(_help_panel)
 
 
 func _build_card(parent: Control) -> void:
@@ -143,6 +259,9 @@ func set_hp(current: int, maximum: int) -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
+	if event.is_action_pressed("toggle_help"):
+		_help_panel.visible = not _help_panel.visible
+		return
 	if _restarting:
 		return
 	if event.is_action_pressed("restart"):

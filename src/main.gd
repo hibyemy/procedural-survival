@@ -6,6 +6,7 @@ extends Node2D
 var ARENA_RECT := Rect2(-1000.0, -600.0, 2000.0, 1200.0)
 const PLAYER_START := Vector2.ZERO
 const WALL_THICKNESS := 64.0
+const PROP_COUNT := 12
 
 var config := ChapterConfig.new()
 
@@ -90,10 +91,20 @@ func _ready() -> void:
 		emp_director.pulse_ended.connect(func() -> void:
 			hud.show_status("TURRETS ONLINE"))
 
+	var scanner := InteractionScanner.new()
+	scanner.name = "InteractionScanner"
+	scanner.player = player
+	scanner.container = level
+	scanner.build_system = build_system
+	scanner.can_repair = config.repair_kit_unlocked
+	add_child(scanner)
+
 	hud = Hud.new()
 	hud.name = "Hud"
 	add_child(hud)
 	hud.set_hp(player.health.current, player.health.max_health)
+	hud.bind_inventory(level)
+	scanner.hud = hud
 	hud.set_objective(_objective_text())
 	hud.prepare_advance(RunState.chapter + 1 if RunState.is_story() else 0)
 	hud.show_card("CH.%d  %s" % [config.id, config.title.to_upper()],
@@ -164,6 +175,57 @@ func _build_terrain(level: Node2D, nav: NavService) -> void:
 		var radius := rng.randf_range(24.0, 46.0)
 		_add_rock(level, point, radius)
 		nav.mark_circle(point, radius)
+
+	_scatter_props(level, rng, placed)
+
+
+## Deterministic non-colliding decor from CC0 Kenney tiles (16px native,
+## rendered at x2 until the pixel pipeline swap). Consumes the same terrain
+## stream after the rocks so runs stay reproducible.
+func _scatter_props(level: Node2D, rng: RandomNumberGenerator, claimed: Array[Vector2]) -> void:
+	var textures: Array[Texture2D] = []
+	var dir := DirAccess.open("res://assets/art/props")
+	if dir == null:
+		return
+	dir.list_dir_begin()
+	var file_name := dir.get_next()
+	while file_name != "":
+		if not dir.current_is_dir() and file_name.ends_with(".png"):
+			var path := "res://assets/art/props/" + file_name
+			if ResourceLoader.exists(path):
+				textures.append(load(path))
+		file_name = dir.get_next()
+	if textures.is_empty():
+		return
+	var scattered: Array[Vector2] = []
+	var attempts := 0
+	while scattered.size() < PROP_COUNT and attempts < 120:
+		attempts += 1
+		var point := Vector2(
+				rng.randf_range(ARENA_RECT.position.x + 96.0, ARENA_RECT.end.x - 96.0),
+				rng.randf_range(ARENA_RECT.position.y + 96.0, ARENA_RECT.end.y - 96.0))
+		if point.distance_to(PLAYER_START) < 200.0:
+			continue
+		var clear := true
+		for existing in claimed:
+			if existing.distance_to(point) < 110.0:
+				clear = false
+				break
+		if not clear:
+			continue
+		for existing in scattered:
+			if existing.distance_to(point) < 90.0:
+				clear = false
+				break
+		if not clear:
+			continue
+		scattered.append(point)
+		var sprite := Sprite2D.new()
+		sprite.texture = textures[rng.randi_range(0, textures.size() - 1)]
+		sprite.scale = Vector2(2.0, 2.0)
+		sprite.position = point
+		sprite.z_index = -4
+		level.add_child(sprite)
 
 
 func _add_block(level: Node2D, rect: Rect2, color: Color) -> void:

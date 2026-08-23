@@ -103,6 +103,13 @@ func _try_repair() -> bool:
 	return true
 
 
+## Public entry point for the interaction scanner (E outside build mode).
+func try_repair_from_player() -> bool:
+	if not enabled:
+		return _try_repair()
+	return false
+
+
 func _nearest_damaged_structure() -> Node2D:
 	var best: Node2D = null
 	var best_dist := REPAIR_RANGE
