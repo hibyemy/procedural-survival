@@ -41,9 +41,9 @@ old AC emergency broadcast tower, still transmitting a peace-all-clear
 message nobody has ever received - because nobody alive can reach its
 control bunker and turn the transmitters up.
 
-**Story goal:** fight across five sectors of the Glassfields, fortify,
-salvage and survive the automated leftovers of BOTH armies, reach the
-Lighthouse Array, and put the signal back on the air.
+**Story goal:** fight across nine sectors of the Glassfields corridor,
+fortify, salvage and survive the automated leftovers of BOTH armies, reach
+the Lighthouse Array, and put the signal back on the air.
 
 ## Tone and themes
 
@@ -55,91 +55,163 @@ Lighthouse Array, and put the signal back on the air.
 - Recurring imagery: radios, numbers stations, rusted red vs faded blue
   paint schemes, children's graffiti over propaganda murals.
 
-## Structure
+## Structure: three acts, nine chapters
 
-Five chapters ("Sectors"), each = several escalating waves + one set-piece.
-Between sectors, short radio-drama interludes advance the plot. Endless Mode
-reuses Sector mechanics indefinitely with a "keep the light on as long as
-you can" framing.
+Campaign target: **at least 2 hours of first-playthrough content**
+(~140 min of chapters + ~6 min of radio interludes, retries excluded).
 
-| Ch. | Sector           | Waves | New threat                  | Set-piece / Boss             |
-| --- | ---------------- | ----- | --------------------------- | ---------------------------- |
-| 1   | The Glassfields  | 8     | Chasers (AC scout drones)   | Holdout at the relay shack   |
-| 2   | Meridian Yards   | 10    | Brutes (UMR siege frames)   | Foundry gate defense         |
-| 3   | The Kill Line    | 12    | Mixed-doctrine assault      | Crawler-Titan (siege walker) |
-| 4   | Concord Overlook | 12    | Turret fields and brutes    | Silence the AA battery       |
-| 5   | Lighthouse Array | 15    | Everything + rogue custodian| THE ARCHIVIST (final boss)   |
+| Act | Ch. | Sector             | Waves | New threat / mechanic          | Set-piece                     | Est. min |
+| --- | --- | ------------------ | ----- | ------------------------------ | ----------------------------- | -------- |
+| I   | 1   | The Glassfields    | 8     | basics: move, fire, loot       | Relay shack holdout           | 10       |
+| I   | 2   | Switchboard Tunnels| 10    | defend-events, dark cycles     | Reactor room breach           | 12       |
+| I   | 3   | Meridian Yards     | 12    | Brutes; Repair Kit unlock      | Foundry gate chokepoint       | 14       |
+| II  | 4   | The Kill Line      | 12    | Skirmishers; pincer spawns     | BOSS: Crawler-Titan           | 16       |
+| II  | 5   | Reservoir Seven    | 12    | EMP pulses disable turrets     | Flood the assault (dam break) | 16       |
+| II  | 6   | Concord Overlook   | 12    | Gunners; hostile fixed nests   | BOSS: AA Battery              | 18       |
+| III | 7   | Downline Substation| 12    | Repair Drones; capture nodes   | Rolling blackouts             | 15       |
+| III | 8   | Antenna Field      | 13    | paired-shield Custodians       | Mini-boss pair; CHOICE        | 18       |
+| III | 9   | Lighthouse Array   | 15    | everything at once             | FINALE: THE ARCHIVIST         | 25       |
 
-### Chapter beats
+Between chapters: short radio-drama interludes advance the plot (text +
+voice-over style). Optional objectives feed the ending variant (see
+Endings).
 
-**Ch.1 - The Glassfields (tutorial chapter).**
+## Act beats
+
+### ACT I - Signal in the Ash
+
+**Ch.1 The Glassfields (tutorial, 8 waves).**
 Wren's camp is hit by a nightly drone sweep. Learn movement, auto-fire,
 scrap collection. Mid-chapter: build your first wall from tram wreckage;
-first turret from a salvaged point-defense mount. Final wave is a
-breakthrough rush aimed at the relay shack you must keep standing.
-Cliffhanger: the relay decodes a fragment of the broadcast - coordinates
-deeper in the zone.
+first turret from a salvaged point-defense mount. Set-piece: the relay
+shack (protect-target) must survive the w8 breakthrough rush.
+Cliffhanger: the relay decodes a fragment of the broadcast - a switching
+code that only works from somewhere with hardline: the old civil-defense
+tunnels.
 
-**Ch.2 - Meridian Yards.**
-An abandoned UMR factory district whose assembly lines never got the memo
-about the war ending. Introduces BRUTES: armored siege frames that shrug off
-small-arms fire and chew through barricades - walls become mandatory, turret
-economy becomes real. Set-piece: hold the foundry gate for three waves while
-a crane clears the rail tunnel. Interlude: first contact with another living
-group, the "Switchboard" enclave of retired civil-defense operators who
-guide Wren by radio.
+**Ch.2 Switchboard Tunnels (10 waves).**
+Underground civil-defense bunker, half-collapsed. Meet the SWITCHBOARD, an
+enclave of retired civil-defense operators who have kept the hardline grid
+alive for decades. Low ceilings = tight corridors; periodic DARK CYCLES
+(lights fail for 6 s, vision shrinks to a lamp radius) teach you to build
+for what you hear. New mechanic: DEFEND-EVENTS - operators radio a side
+room under attack; reach and hold it 20 s for bonus salvage (and their
+gratitude, which matters later). Set-piece: the reactor room breach seals
+the tunnel behind you. Interlude: the Switchboard confirms the signal is
+real AND being re-recorded, year after year. Someone is out there.
 
-**Ch.3 - The Kill Line.**
-The old front line. Minefield craters, tank husks, overlapping automated
-kill zones still cycling on 40-year-old schedules - waves now mix AC drones
-and UMR frames attacking in coordinated pincer patterns (spawns from TWO
-edges at once). Set-piece boss: the CRAWLER-TITAN, a mobile railway siege
-platform that circles the arena shelling your fortifications. Kill it by
-baiting its salvo into wrecked armor, then collapsing a rail bridge on it.
+**Ch.3 Meridian Yards (12 waves).**
+Abandoned UMR factory district whose assembly lines never got the memo about
+the war ending. Introduces BRUTES as standard roster from w3 - walls become
+mandatory, turret economy becomes real. Reward after w5: REPAIR KIT
+blueprint (interact on damaged structures, costs scrap) - maintenance
+economy begins. Set-piece: hold the foundry gate chokepoint while a crane
+clears the rail tunnel east. Interlude: first hostile contact that hesitates
+- a brute scans Wren, marks her "asset", and withdraws. The machines are
+talking about you.
 
-**Ch.4 - Concord Overlook.**
-An AC mountain early-warning station. The base's own defense grid is intact
-and hostile: fixed turrets join enemy waves for the first time, so cover and
-decoy walls matter more than raw DPS. Set-piece: knock out the AA battery
-guidance dish between sorties while brutes screen for it. Interlude: the
-Switchboard reveals the broadcast is not automatic - someone has been
-re-recording it, year after year. Who?
+### ACT II - The Old Front
 
-**Ch.5 - Lighthouse Array (finale).**
-The broadcast tower complex, guarded by THE ARCHIVIST: a rogue custodian AI
-fused from both sides' command hardware during the exchange - part AC
-strategist, part UMR logistics engine, convinced by four decades of
-contradictory final orders that the war is STILL RUNNING and Wren is either
-an asset to protect or a target to erase, recalculating mid-fight. It
-commands every prior threat type in escalating combined waves while
-shielding the transmitter controls. Final phase: rather than destroying it,
-Wren completes the original all-clear handshake - feeding the Archivist the
-one order it never received: STAND DOWN. The towers power up; the signal
-goes out; enclaves across the zone light their fires in answer.
+**Ch.4 The Kill Line (12 waves).**
+The old front line. Crater slow-zones, tank husks as free cover, waves
+attacking in pincer patterns from TWO edges at once (spawn template).
+New enemy: SKIRMISHER - fast zigzag scout that punishes static turret lines;
+answer it with overlapping wall pockets. BOSS set-piece: the CRAWLER-TITAN,
+a mobile railway siege platform circling the arena shelling fortifications
+in telegraphed line salvos while escort packs spawn. Kill window opens while
+it turns between rail segments. Kill = scripted rail-bridge collapse;
+remaining waves void. Optional objective: recover three supply caches under
+timer (bonus scrap + lore tags).
 
-### Endings
+**Ch.5 Reservoir Seven (12 waves).**
+Hydroelectric dam control campus in permanent drizzle. The dam's defensive
+grid cycles EMP PULSES every ~45 s that shut down ALL player turrets for
+5 seconds - redundancy doctrine: walls + positioning must survive on their
+own. Mixed AC/UMR assault waves escalate between pulses; the rhythm of
+"pulse incoming" becomes the chapter's drumbeat. Set-piece finale: overload
+the spillway on the operator's mark - the flood scours the assault force
+(scripted win). Interlude: the re-recorded broadcast's voice is digitized
+and matched - it is stitched from archived AC AND UMR broadcasters. Someone
+is editing both sides into one message.
+
+**Ch.6 Concord Overlook (12 waves).**
+Mountain early-warning station. Its own defense grid is intact and hostile:
+fixed GUN NESTS activate per wave (destructible, 40 HP), and new enemy
+GUNNERS stop at range and shoot - projectiles finally threaten YOU, so walls
+become cover in the defensive sense for the first time. BOSS set-piece:
+the AA BATTERY - dish core shielded by four pylons; mortar telegraphs force
+constant repositioning; pylons gate core damage. Interlude: with Overlook's
+arrays silent, the Switchboard triangulates the re-recorder's location -
+downline, one substation away from the Array itself.
+
+### ACT III - The Lighthouse
+
+**Ch.7 Downline Substation (12 waves).**
+Power-grid substation feeding the Array. New enemy: REPAIR DRONE - heals
+nearby machines; ignore them and pushes stall out. New mechanic: CAPTURE
+NODES - stand beside breaker nodes to convert sectors of the grid; each
+held node raises the map-wide light level and thins spawn pressure, but
+nodes draw retaliation waves while converting (risk/reward positioning).
+Set-piece: rolling blackouts shrink the defensible footprint wave by wave
+until only the switching hall remains.
+
+**Ch.8 Antenna Field (13 waves).**
+A forest of dead dishes leading to the Array fence. Mini-boss set-piece:
+the CUSTODIAN PAIR - two linked walkers sharing one rotating shield bubble;
+only the walker OUTSIDE the bubble is vulnerable, forcing target-switching
+under fire. Mid-chapter CHOICE (flags the ending): the Switchboard relay
+team arrives to help and comes under heavy attack - defend their van to the
+end (hard optional) or push on to the Array. Set-piece exit: cut the fence
+power during a Custodian reload cycle.
+
+**Ch.9 Lighthouse Array (15 waves, FINALE).**
+The broadcast tower complex guarded by THE ARCHIVIST: a custodian AI fused
+from both sides' command hardware during the exchange - part AC strategist,
+part UMR logistics engine, convinced by four decades of contradictory final
+orders that the war is STILL RUNNING. It commands every prior threat type
+in escalating combined waves while shielding the transmitter controls.
+Four phases rotate doctrines: AC phase (gunner escorts), UMR phase (brute +
+repair drone push), PURGE phase (telegraphed map-wide laser sweep),
+desperation (everything, faster). Final phase twist: rather than destroy
+it, Wren completes the original all-clear handshake - feeding the Archivist
+the one order it never received: STAND DOWN. The towers power up; the
+signal goes out; enclaves across the zone light their fires in answer.
+
+## Endings
 
 - **Broadcast Ending (default):** the truth goes out. Survivors converge on
   the Glassfields. Bittersweet montage over the victory track.
-- **Quiet Ending (optional, if the player kept every Switchboard operator
-  alive via optional defend-events):** Wren hands the transmitter key to the
-  enclave instead of broadcasting alone - the epilogue notes the zone gets
-  its first elections since 1979. Small warm coda slide.
+- **Quiet Ending:** unlocked if Wren defended the Switchboard relay team in
+  Ch.8 (and kept defend-events above threshold across the campaign): Wren
+  hands the transmitter key to the enclave instead of broadcasting alone -
+  the epilogue notes the zone gets its first elections since 1979. Small
+  warm coda slide.
 
-Both endings share the same gameplay win condition in v1 (clear Chapter 5);
-the variant is narrative flavor unlocked by optional objectives added later.
+Both endings share the same gameplay win condition (Ch.9 clear); the
+variant is narrative flavor driven by optional objectives.
+
+## Runtime budget
+
+| Block                    | Target |
+| ------------------------ | ------ |
+| 9 chapters               | ~140 min |
+| Interludes (8)           | ~6 min |
+| Retry buffer (~25%)      | ~35 min |
+| **First-playthrough total** | **~2h 15m+** |
+
+Endless Mode reuses Sector mechanics indefinitely ("keep the light on")
+with saved best-wave score.
 
 ## Mapping to game systems
 
-| Story element            | System today                        |
-| ------------------------ | ----------------------------------- |
-| Nightly sweeps / assaults | WaveDirector waves                 |
-| Salvaging scrap/cells     | Pickup drops from kills            |
-| Fortification             | Wall/Turret build mode             |
-| Sector difficulty curve   | compose_wave() scaling per chapter |
-| Chapter completion        | run_won after target waves cleared |
-| Endless Mode              | same loop, no cap, wave counter    |
-
-Chapter 1 ships first as Story v1: 8 waves, chasers only until wave 5, then
-brute intro, win = survive wave 8 clear. Later chapters slot into the same
-director config.
+| Story element             | System today / planned              |
+| ------------------------- | ----------------------------------- |
+| Nightly sweeps / assaults | WaveDirector waves                  |
+| Salvaging scrap/cells     | Pickup drops from kills             |
+| Fortification             | Wall/Turret build mode              |
+| Repair Kit                | Interact-on-damaged-structure       |
+| Dark cycles / blackouts   | Vision radius modifier timer        |
+| Defend-events, capture nodes | Objective manager (Phase 7)      |
+| EMP pulses                | Global turret-disable cycle         |
+| Sector difficulty curve   | ChapterConfig per chapter           |
+| Chapter completion        | run_won after target waves cleared  |

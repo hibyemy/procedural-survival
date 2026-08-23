@@ -9,7 +9,7 @@ From working demo to shippable indie title. Narrative canon lives in
 - **Genre:** top-down 2.5D pixel-art survival base-defense, roguelite waves.
 - **Fantasy:** one scavenger-engineer holding automated war leftovers at bay
   with salvaged fortifications, across the ruins of two dead superpowers.
-- **Modes:** Story (5 chapters, 60-90 min) + Endless (score attack).
+- **Modes:** Story (3 acts, 9 chapters, 2h15m+ first run) + Endless (score attack).
 - **Target:** PC (Windows first), gl_compatibility renderer, 60 fps on
   integrated graphics.
 - **Quality bar:** polished itch.io indie demo - coherent palette, real
@@ -71,16 +71,24 @@ generator (rect size, rock count/radius ranges, hazard props, border style).
   falls.
 - Exit: clear w8 -> victory -> interlude slide -> unlock Ch.2.
 
-### Ch.2 Meridian Yards (10 waves)
+### Ch.2 Switchboard Tunnels (10 waves)
+- Layout: 2304x1440 underground bunker; corridor-heavy rock fields; low
+  light ambience.
+- New mechanics: DARK CYCLES (6 s vision shrink every ~40 s) and
+  DEFEND-EVENTS (radioed side-room holds, 20 s, bonus salvage + ending
+  flag).
+- Set-piece: reactor room breach seals the exit (scripted wave surge).
+
+### Ch.3 Meridian Yards (12 waves)
 - Layout: 2304x1440 factory yard; dense rock fields forming corridors;
   conveyor-line floor decals.
 - Brutes standard from w3; blueprint reward after w5: **Repair Kit**
   (interact on damaged structure, costs scrap) - maintenance economy.
 - Set-piece: foundry gate chokepoint where spawns narrow to a 2-cell-wide
-  corridor during w8-10 (spawn template modifier).
-- Exit: clear w10.
+  corridor during final waves (spawn template modifier).
+- Exit: clear w12.
 
-### Ch.3 The Kill Line (12 waves)
+### Ch.4 The Kill Line (12 waves)
 - Layout: 2560x1536 battlefield; crater decals as slow zones (-30% speed),
   wrecked armor props as free cover blocks; pincer template - two spawn
   edges active per wave.
@@ -90,8 +98,16 @@ generator (rect size, rock count/radius ranges, hazard props, border style).
   circles the border ring, telegraphed 1 s line salvo that shreds
   structures, spawns chaser escorts; weak point exposed while turning
   between rails. Kill = scripted bridge-collapse win, remaining waves void.
+- Optional: three timed supply caches.
 
-### Ch.4 Concord Overlook (12 waves)
+### Ch.5 Reservoir Seven (12 waves)
+- Layout: 2304x1440 dam campus in drizzle; water-edge borders; pump-house
+  props.
+- New mechanic: EMP PULSES - map-wide turret shutdown for 5 s every ~45 s
+  with a warning tone; walls/positioning must carry the gap.
+- Set-piece: spillway overload floods the final assault (scripted win).
+
+### Ch.6 Concord Overlook (12 waves)
 - Layout: 2304x1440 mountain station; plateau rocks fake elevation; fixed
   hostile AC gun nests activate per wave - destructible (40 HP) or avoided.
 - New enemy: **Gunner** - stops at 220 px range, fires projectiles at the
@@ -100,16 +116,38 @@ generator (rect size, rock count/radius ranges, hazard props, border style).
   pylons; pylons gate core damage; map-wide mortar telegraphs every 6 s
   force repositioning between pylons.
 
-### Ch.5 Lighthouse Array (15 waves, finale)
-- Layout: 2816x1728 broadcast complex; symmetric avenues; indestructible
-  transmitter tower center-piece.
+### Ch.7 Downline Substation (12 waves)
+- Layout: 2560x1536 power-grid substation; breaker-node props; cable-run
+  floor decals.
 - New enemy: **Repair Drone** - heals nearby enemies 1 HP/s, 4 HP, priority
   target or pushes stall.
+- New mechanic: CAPTURE NODES - stand beside breakers to convert sectors;
+  held nodes raise light level and thin spawns, but converting draws
+  retaliation waves.
+- Set-piece: rolling blackouts shrink the defensible footprint wave by wave
+  until only the switching hall remains.
+
+### Ch.8 Antenna Field (13 waves)
+- Layout: 2816x1728 dish forest; symmetric approach lanes; fence line at
+  the far edge.
+- Mini-boss set-piece: **Custodian PAIR** - two walkers sharing one rotating
+  shield bubble; only the walker outside the bubble is vulnerable; forces
+  target-switching under fire.
+- Mid-chapter CHOICE: defend the arriving Switchboard relay van to the end
+  (hard optional, flags Quiet Ending) or push through.
+- Exit: cut fence power during a Custodian reload cycle.
+
+### Ch.9 Lighthouse Array (15 waves, finale)
+- Layout: 3200x1920 broadcast complex; symmetric avenues; indestructible
+  transmitter tower center-piece.
 - FINAL BOSS: **THE ARCHIVIST** (200 HP, 4 phases): stationary command core
   rotating doctrines - AC phase (gunner escorts), UMR phase (brute + repair
   drone push), purge phase (telegraphed map laser sweep), desperation phase
   (enrage, mixed everything). Narrative finish: STAND DOWN handshake beats
   it without destroying - final wave clear + core at 0 = broadcast ending.
+
+**Campaign runtime target:** ~140 min across chapters + ~6 min interludes +
+retry buffer = **2h15m+ first playthrough** (see STORYBOARD runtime table).
 
 ## 5. Systems roadmap
 
@@ -119,9 +157,13 @@ generator (rect size, rock count/radius ranges, hazard props, border style).
 | ChapterConfig + chapter select UI | 6 | Resource-driven, menu row |
 | Interlude screens (text + portrait slide) | 6 | reuses radio_interlude_bg art |
 | Protect-target objective | 7 | HealthComponent on prop; fail state |
+| Objective manager (defend-events, capture nodes, timed caches) | 7 | shared objective scheduler |
+| Dark cycles / rolling blackouts (vision + footprint shrink) | 7 | global modifier timer |
 | Boss framework (phases, telegraphs, weak points) | 7 | boss_base.gd + per-boss scripts |
 | New enemies: Skirmisher, Gunner, Repair Drone | 8 | extend KIND_STATS + behaviors |
 | Enemy projectile variant (targets player) | 8 | Projectile gains faction mask param |
+| EMP pulse cycle (turret shutdown windows) | 8 | warning tone + global disable |
+| Paired-shield mini-boss (Custodian Pair) | 8 | linked shield rotation logic |
 | Repair Kit blueprint + structure HP UI | 8 | interact prompt when near damaged wall |
 | Crater slow zones / decals with gameplay effect | 8 | Area2D speed multiplier |
 | Pincer spawn template (2 edges) | 8 | WaveDirector spawn edge list |
@@ -139,12 +181,15 @@ playtest of the touched loop.
 | --------- | ------------- |
 | M1 Art pipeline live (end Ph.6) | player/chaser/ground use real pixel art at x3 nearest; zero visual regressions headless |
 | M2 Story skeleton (end Ph.7) | menu -> ch1 -> interlude -> ch2 playable start-to-finish via chapter select; save persists |
-| M3 Combat depth (end Ph.8) | all 6 enemy types + 2 bosses functional in test arenas |
-| M4 Content complete (end Ph.9) | all 5 chapters beatable; endless 20+ waves stable; juice pass applied |
+| M3 Combat depth (end Ph.8) | all 6 enemy types + 2 bosses + 1 mini-boss functional in test arenas |
+| M4 Content complete (end Ph.9) | all 9 chapters beatable; measured first-run time >= 2h; endless 20+ waves stable; juice pass applied |
 | M5 Release candidate (end Ph.10) | exported exe runs on a clean machine; credits/licensing docs complete |
 
-Rough solo-dev sizing: Ph.6 = 1-2 wk, Ph.7 = 2 wk, Ph.8 = 3 wk,
-Ph.9 = 3-4 wk, Ph.10 = 1 wk.
+Rough solo-dev sizing (9-chapter scope): Ph.6 = 1-2 wk, Ph.7 = 2-3 wk,
+Ph.8 = 3-4 wk, Ph.9 = 4-5 wk, Ph.10 = 1 wk. Total ~12-15 wk to RC.
+Scope guard: chapters ship in vertical-slice order (Ch.1 -> Ch.2 -> ...);
+no new chapter content starts before the previous one is beatable and
+tested.
 
 ## 7. Asset acquisition strategy
 
