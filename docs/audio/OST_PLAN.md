@@ -1,37 +1,70 @@
-# Procedural Survival — Original Soundtrack Plan
+# Procedural Survival - Original Soundtrack Plan (Lyria 3 Pro edition)
 
-This document is the brief for every background music track in the game.
-The engine already knows these exact file paths, so when you finish a track,
-export it to the listed location and it plays automatically. No code changes
-needed.
+Every track below is designed to be generated with **Google Lyria 3**, not
+composed from scratch. The engine already knows these exact file paths:
+finish a track, run it through the post-processing pipeline at the bottom,
+drop it in the listed location, and it plays automatically.
 
----
+## Generation stack
 
-## Global aesthetic direction
+| Stage | Model | Why |
+| ----- | ----- | --- |
+| Prompt iteration | `lyria-3-clip-preview` (30 s clips) | fast + cheap vibe-checking before committing |
+| Final renders | `lyria-3-pro-preview` (~184 s max) | full-length, structure-aware, timestamp control |
 
-- **Era feel:** late Cold War analog electronics. Think 1979–1986: tape
-  saturation, vinyl hiss, monophonic synth leads, drum machines (LinnDrum /
-  TR-808 style), shortwave radio static as texture.
-- **Mood arc:** the world ended in an afternoon; everything you hear is what
-  is left. Music should feel *lonely but purposeful* — scavenging, not doom.
-- **Harmonic language:** minor keys, mostly Aeolian and Dorian. Avoid major
-  resolutions except for the victory track. Suspended chords and pedal tones
-  create tension without fatigue during long loops.
-- **Tempo map:** menu ~80 BPM, exploration ~70 BPM, combat ~100 BPM, siege
-  ~120 BPM. Never faster; this is a survival game, not an action game.
+Verified model behavior (per Google's docs, March 2026):
 
-## Delivery specs (all tracks)
+- Text or image prompts; **instrumental-only is fully supported**.
+- Structure control via section tags (`[Intro]`, `[Verse]`, ...) and
+  timestamps (`[0:00 - 0:30] ...`); duration steered by prompt
+  ("create a 2-minute song").
+- Specify **BPM, key, instruments, mood adjectives** explicitly - vague
+  prompts give generic output.
+- **Single-turn only**: no iterative editing. To change anything, regenerate
+  with a revised prompt. Change ONE variable per regeneration.
+- Results vary run-to-run even with identical prompts: generate 3-4 takes,
+  keep the best.
+- Requests naming real artists are blocked by safety filters. Describe the
+  *production style* instead.
+- Output: MP3 (convert to OGG for Godot). All audio carries an inaudible
+  SynthID watermark.
+- Usage rights depend on your access route (Gemini API / Vertex AI /
+  consumer app) - confirm the commercial-use terms of whichever you use.
 
-| Spec         | Value                                        |
-| ------------ | -------------------------------------------- |
-| Format       | OGG Vorbis (quality ~0.9) or WAV → Godot re-imports |
-| Sample rate  | 44.1 kHz                                     |
-| Channels     | Stereo                                       |
-| Loudness     | -16 LUFS integrated (music bus sits at -6 dB under SFX) |
-| Looping      | Seamless loop; set `loop = true` on import (Godot OGG importer has a Loop checkbox), or leave off for one-shots noted below |
-| Naming       | lowercase snake_case exactly as listed       |
+## Global rules for every prompt
 
-**File locations:**
+1. Always append the phrase **"Instrumental only. No vocals, no lyrics."**
+2. Never name artists/bands; describe era + production instead
+   ("late-1970s analog synth soundtrack production, tape saturation").
+3. Always state BPM and key.
+4. Use timestamps to lay out the arrangement you want.
+5. Keep the shared style anchor (below) as the opening sentence of every
+   prompt so all six tracks sound like one OST.
+
+### Shared style anchor (prepend verbatim)
+
+> Late Cold War analog electronic soundtrack, circa 1979-1986: monophonic
+> synth leads, warm detuned pad beds, vintage drum machine, shortwave radio
+> static texture, tape hiss and vinyl crackle. Melancholy, lonely but
+> purposeful - scavenging the ruins of a war fought by machines.
+
+### The leitmotif (adjusted expectation)
+
+A generative model will not reliably reproduce an exact melody across
+tracks. Instead, every prompt below describes the same *conceptual motif* -
+"a sparse three-note descending motif on a thin synth lead". Generate all
+tracks, then hand-pick takes whose motifs happen to rhyme. That selection
+step IS your leitmotif work now.
+
+## Delivery specs
+
+| Spec | Value |
+| ---- | ----- |
+| Format | convert generated MP3 -> OGG Vorbis q~0.9 (Godot-native) |
+| Sample rate | 44.1 kHz stereo (resample from 48 kHz render) |
+| Loudness | normalize every track to **-16 LUFS integrated**, true peak <= -1 dBTP |
+| Looping | see per-track targets; seamless-loop recipe at bottom |
+| Naming | exactly as listed, lowercase snake_case |
 
 ```
 assets/audio/music/menu.ogg
@@ -42,114 +75,154 @@ assets/audio/music/game_over.ogg
 assets/audio/music/victory.ogg
 ```
 
-If a file does not exist the game silently skips it, so you can add tracks
-incrementally.
+Missing files are silently skipped by the engine, so build incrementally.
 
 ---
 
-## Track-by-track plans
+## Track briefs with ready-to-paste prompts
 
-### 1. `menu.ogg` — "Last Broadcast" (main menu)
+Each prompt already contains the style anchor's intent; paste as-is into
+Pro, iterate in Clip first by pasting just the first two sentences.
 
-- **When it plays:** main menu, settings screen, any time no run is active.
-  Loops forever until the player starts a mode.
-- **Job:** establish the premise in 10 seconds — civilization ended, but
-  someone is still transmitting. This is the player's first impression.
-- **Content:** slow arpeggiated synth figure (A minor, ~80 BPM) over a warm
-  pad bed. Layer a faint **numbers-station style voice/morse motif** every
-  8 bars — this is your story hook in audio form (the "broadcast" the story
-  mode revolves around). Add distant wind noise.
-- **Structure:** A (8 bars) → B (8 bars, adds bass pulse) → back to A. Loop
-  seamlessly at bar 1 of A. Target length 60–90 s so the loop point isn't
-  noticeable.
-- **Avoid:** percussion louder than the pad; the menu should invite reading
-  the buttons, not compete with them.
+### 1. `menu.ogg` - "Last Broadcast"
 
-### 2. `exploration.ogg` — "Ashfall Ambience" (in-run, between waves)
+- **Plays:** main menu + settings screen, looping forever.
+- **Job:** premise in 10 seconds - civilization ended, someone still transmits.
+- **Target:** ~90 s, seamless loop.
 
-- **When it plays:** the moment a run starts, and during the lull after a
-  wave is cleared while the next wave timer counts down. Crossfades out when
-  combat begins.
-- **Job:** make the build/loot phase feel meditative and slightly uneasy —
-  the eye of the storm. This is where players plan, so nothing should demand
-  attention.
-- **Content:** near-ambient. Sub-bass drone (root note only, D), sparse
-  filtered noise sweeps like wind through ruins, occasional metallic pings
-  (very quiet, once per 8–12 s). Melody optional; if present keep it to a
-  single 3-note motif that recurs across ALL combat tracks — a leitmotif the
-  player will subconsciously recognize.
-- **Tempo/key:** ~70 BPM felt tempo or free-time; D Dorian.
-- **Loop:** 90–120 s seamless.
+**Prompt:**
 
-### 3. `combat.ogg` — "Scavengers' Waltz" (standard wave)
+> Create a 90-second instrumental piece: late Cold War analog electronic
+> soundtrack, circa 1979-1986, with monophonic synth leads, warm detuned pad
+> beds, vintage drum-machine pulse, and shortwave radio static texture. In
+> A minor at 80 BPM. Melancholy, lonely but purposeful. [0:00-0:15] Slow
+> arpeggiated synth figure alone over a warm pad. [0:15-0:45] Add a soft
+> bass pulse and faint morse-code blips like a numbers station, plus distant
+> wind noise. [0:45-0:75] Introduce a sparse three-note descending motif on
+> a thin synth lead. [0:75-0:90] Strip back to pad and arpeggio for a
+> loopable ending. Instrumental only. No vocals, no lyrics.
 
-- **When it plays:** on `wave_started`, for waves composed mainly of chasers.
-  Crossfades back to `exploration` when the wave is cleared.
-- **Job:** raise the heart rate without panic. The player is kiting and
-  shooting; give them a steady rhythmic anchor to move to.
-- **Content:** driving pulse bass (eighth notes), punchy but dry drum
-  pattern (kick on 1 & 3, snare/noise on 2 & 4), staccato string-synth
-  stabs answering the bass. Bring in the shared leitmotif from track 2 at
-  double speed in the lead line. Keep frequency space clear around 2–4 kHz
-  so gunfire SFX cut through.
-- **Tempo/key:** ~100 BPM, A minor.
-- **Loop:** 60–90 s seamless. Avoid big arrangement jumps mid-loop — waves
-  can last anywhere from 20 s to 2 min.
+**Loop edit:** the timestamped strip-back ending should butt cleanly against
+bar 1; verify and micro-crossfade if needed.
 
-### 4. `siege.ogg` — "Steel Rain" (heavy wave / brutes on field)
+### 2. `exploration.ogg` - "Ashfall Ambience"
 
-- **When it plays:** on `wave_started` when the wave includes brutes (the
-  director passes a "heavy" flag). This must feel categorically more
-  dangerous than `combat`.
-- **Job:** dread + weight. Brutes are slow tanks; the music should sound
-  like something enormous is walking toward you.
-- **Content:** half-time feel (~120 BPM with kick landing like footsteps),
-  detuned saw drone a fifth below the root, industrial percussion (metal
-  impacts, chain hits instead of snare), dissonant cluster chord that never
-  resolves. Optional low male vocal Drone or cello sample. Save ONE new
-  element for the final 25% of the loop (a rising siren-like filter sweep)
-  so extended fights escalate naturally.
-- **Tempo/key:** 120 BPM half-time, F minor.
-- **Loop:** 75–100 s seamless.
+- **Plays:** in-run between waves (build/loot phase); crossfades out when
+  combat starts.
+- **Job:** meditative eye-of-the-storm; must never compete for attention.
+- **Target:** ~120 s, seamless loop.
 
-### 5. `game_over.ogg` — "Static Requiem" (death screen)
+**Prompt:**
 
-- **When it plays:** the instant `player_died` fires (tree is paused — the
-  audio autoload keeps running). Does NOT need to loop longer than ~20 s;
-  fade to silence after one pass if easier than looping.
-- **Job:** grief, then resolve into quiet determination — the retry button
-  is right there.
-- **Content:** the numbers-station morse motif from the menu, slowed to half
-  speed and detuned, over a decaying pad. End on an unresolved suspended
-  chord (no cadence — the fight isn't finished).
-- **Length:** 15–25 s, one-shot (loop off).
+> Create a 2-minute near-ambient instrumental bed: late-1970s analog
+> electronics, sub-bass drone on D, filtered wind-like noise sweeps through
+> ruined-city space, very quiet metallic pings once every ten seconds, and
+> occasional vinyl crackle. Around 70 BPM felt tempo, D Dorian, free and
+> breathing. Midway, introduce a barely-present three-note descending synth
+> motif, then let it dissolve again. No drums. Sparse, hollow, slightly
+> uneasy but calm. Instrumental only. No vocals, no lyrics.
 
-### 6. `victory.ogg` — "Dawn Signal" (story mode win)
+**Loop edit:** drones loop easily; check the noise sweeps don't peak near
+the seam.
 
-- **When it plays:** when `run_won` fires in story mode (final wave
-  cleared / objective complete).
-- **Job:** the ONLY moment of hope in the OST. Payoff for the whole run.
-- **Content:** take the 3-note leitmotif and finally resolve it to the
-  relative MAJOR. Warm pad + real-feeling bell/plucked tone playing the
-  motif, gentle 4-on-the-floor pulse lifting into a sustained major chord.
-  Radio static fades OUT over the first 8 bars — the broadcast got through.
-- **Length:** 30–45 s, one-shot, tail into silence.
+### 3. `combat.ogg` - "Scavengers' Waltz"
 
-### 7. (Optional stretch) `wave_horn` stinger
+- **Plays:** standard chaser waves; back to exploration when cleared.
+- **Job:** raise heart rate without panic; steady rhythmic anchor for kiting.
+- **Target:** ~90 s, seamless loop, no big mid-loop jumps.
 
-- 2–4 s brass/synth alarm hit played by the SFX system (not music) at each
-  wave start. See `SFX_GUIDE.md`.
+**Prompt:**
+
+> Create a 90-second driving instrumental track: late-1970s analog synth
+> production with tape saturation. Pulse-bass eighth notes, dry punchy drum
+> machine (kick on 1 and 3, noise snare on 2 and 4), staccato string-synth
+> stabs answering the bass, and a fast three-note descending lead motif in A
+> minor at 100 BPM. Tense, propulsive, focused. Keep the midrange open -
+> sparse mix, no wall of sound. [0:00-0:10] Bass and drums alone. [0:10-0:70]
+> Full pattern with stabs and motif. [0:70-0:90] Drop the lead, keep groove
+> for a loopable outro. Instrumental only. No vocals, no lyrics.
+
+### 4. `siege.ogg` - "Steel Rain"
+
+- **Plays:** heavy waves containing brutes; must feel categorically more
+  dangerous than combat.
+- **Job:** dread + weight; something enormous walking toward you.
+- **Target:** ~90 s, seamless loop.
+
+**Prompt:**
+
+> Create a 90-second heavy industrial-electronic instrumental: half-time
+> feel at 120 BPM where the kick lands like slow footsteps, a detuned saw
+> drone a fifth below the root in F minor, percussion built from metal
+> impacts and chain hits instead of snares, and one dissonant cluster chord
+> held underneath that never resolves. Oppressive, massive, dread-inducing.
+> [0:00-0:15] Drone and footsteps alone. [0:15-0:65] Industrial percussion
+> builds in layers. [0:65-0:85] Add a slowly rising siren-like filtered
+> sweep. [0:85-0:90] Cut the sweep, return to drone for the loop point.
+> Instrumental only. No vocals, no lyrics.
+
+### 5. `game_over.ogg` - "Static Requiem"
+
+- **Plays:** death screen (tree paused; music autoload keeps running).
+  One-shot, fades after one pass - looping NOT required.
+- **Perfect Clip-model job:** 30 s is exactly enough. Prototype here, and if
+  a Clip take is great, ship it as-is.
+- **Target:** 15-25 s, no cadence - the fight isn't finished.
+
+**Prompt:**
+
+> Create a 20-second mournful instrumental cue: slowed-down, detuned
+> morse-code-style blips playing a sparse descending figure over a decaying
+> warm analog pad, with faint radio static dissolving into silence. Late
+> Cold War electronics, tape hiss. Ends unresolved on a suspended chord with
+> no final cadence. Grieving but quiet. Instrumental only. No vocals, no
+> lyrics.
+
+### 6. `victory.ogg` - "Dawn Signal"
+
+- **Plays:** story-mode win. One-shot, tail into silence.
+- **Job:** the ONLY hopeful cue - payoff for the whole run.
+
+**Prompt:**
+
+> Create a 40-second uplifting-but-weathered instrumental finale: late Cold
+> War analog synths turning warm for the first time. A gentle 4-on-the-floor
+> pulse lifts into a sustained major resolution in C major around 80 BPM;
+> bell-like plucked tones play a rising three-note motif answering the
+> earlier descending one; radio static fades out over the first eight bars
+> like a broadcast finally getting through. Bittersweet dawn, hard-won hope.
+> [0:00-0:12] Solo bells over static. [0:12-0:28] Pulse enters, pads bloom.
+> [0:28-0:40] Full sustained chord, slow decay to silence. Instrumental
+> only. No vocals, no lyrics.
 
 ---
+
+## Post-generation pipeline (every track)
+
+1. **QC pass:** listen end-to-end for AI artifacts - flanged cymbals,
+   garbled "vocal-like" ghosts, sudden timbre swaps at section borders.
+   Regenerate if bad (change one variable only).
+2. **Trim:** remove leading/trailing silence (leave 50 ms head, ~300 ms tail).
+3. **Loop surgery** (looping tracks only):
+   - In Audacity: pick the loop region (usually cutting the intro), duplicate
+     the last 0.3-0.5 s onto the start as a crossfade, use Effect > Fade
+     shapes / Crossfade Clips for an equal-power blend.
+   - Verify: loop it 5x on headphones at LOW volume - clicks hide otherwise.
+   - Pragmatic fallback for ambient beds: leave a 1 s fade-out and let the
+     engine's 0.8 s crossfading mask the seam.
+4. **Convert:** MP3 -> WAV (44.1 kHz) -> OGG Vorbis q0.9 (e.g. ffmpeg:
+   `ffmpeg -i in.mp3 -ar 44100 -q:a 9 out.ogg`).
+5. **Normalize:** -16 LUFS integrated, true peak <= -1 dBTP.
+6. **Name + place** exactly per the paths table; boot the game and confirm
+   each trigger point fires the right track.
 
 ## Production tips
 
-1. **Compose exploration first.** Its 3-note leitmotif seeds every other
-   track; writing it last means retrofitting everything else.
-2. **Stems pay off later.** If your DAW makes it cheap, bounce drums / bass
-   / pads / lead separately. A future dynamic-mix feature (adding layers as
-   waves escalate) needs stems, not full mixes.
-3. **Check loops on headphones at low volume** — clicks at loop points hide
-   otherwise. Leave 1–2 bars of tail overlap when bouncing.
-4. **Mix for ducking:** assume gunshots, explosions and UI blips play ON TOP
-   of everything. Keep 2–4 kHz relatively open in all combat mixes.
+- Iterate prompts in **Clip** (cheap, fast); only render finals in **Pro**.
+- Generate 3-4 takes per track and choose the best - variance is a feature.
+- If a take is 90% right, do NOT try to edit it; re-roll with one changed
+  sentence (e.g., swap "tape saturation" for "clean analog", or nudge BPM).
+- Keep every accepted prompt + take filename in a log next to this file -
+  single-turn means your prompt history is your only "project file".
+- Mix headroom is handled by the -16 LUFS normalize step; gunshots and UI
+  sounds sit ON TOP of these beds by design (see `SFX_GUIDE.md`).
