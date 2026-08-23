@@ -7,7 +7,7 @@ config_version=5
 [application]
 
 config/name="Procedural Survival"
-run/main_scene="res://src/main.tscn"
+run/main_scene="res://src/menu/menu.tscn"
 config/features=PackedStringArray("4.7")
 
 [autoload]
@@ -15,6 +15,9 @@ config/features=PackedStringArray("4.7")
 Events="*res://autoload/events.gd"
 RngService="*res://autoload/rng_service.gd"
 GameState="*res://autoload/game_state.gd"
+RunState="*res://autoload/run_state.gd"
+MusicDirector="*res://src/audio/music_director.gd"
+Sfx="*res://src/audio/sfx.gd"
 
 [input]
 

@@ -1,6 +1,7 @@
 param(
     [string]$GodotExe = "",
-    [int]$Frames = 120
+    [int]$Frames = 120,
+    [string]$Scene = "res://src/menu/menu.tscn"
 )
 
 $ErrorActionPreference = "Stop"
@@ -22,8 +23,8 @@ if (-not $GodotExe -or -not (Test-Path -LiteralPath $GodotExe)) {
 
 $proj = Split-Path -Parent $PSScriptRoot
 
-Write-Host "== Smoke run: boot main scene for $Frames frames (headless)"
-$output = & $GodotExe --headless --path $proj --quit-after $Frames 2>&1
+Write-Host "== Smoke run: boot $Scene for $Frames frames (headless)"
+$output = & $GodotExe --headless --path $proj $Scene --quit-after $Frames 2>&1
 $code = $LASTEXITCODE
 foreach ($line in $output) { Write-Host "   $line" }
 

@@ -55,15 +55,18 @@ func try_place() -> bool:
 		return false
 	var costs: Dictionary = blueprint()["costs"]
 	if not GameState.can_afford(costs):
+		Sfx.play(&"build_deny", -6.0)
 		return false
 	if not _spot_clear(spot):
+		Sfx.play(&"build_deny", -6.0)
 		return false
 	if not GameState.spend(costs):
 		return false
 	var structure := _make_structure(blueprint()["kind"])
 	structure.position = spot
 	container.add_child(structure)
-	Events.building_placed.emit(blueprint()["kind"])
+	Sfx.play(&"place", -4.0)
+	Events.building_placed.emit(blueprint()["kind"], spot)
 	return true
 
 

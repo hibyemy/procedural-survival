@@ -33,11 +33,17 @@ func _ready() -> void:
 	health = HealthComponent.new()
 	health.setup(MAX_HEALTH)
 	add_child(health)
-	health.died.connect(queue_free)
+	health.died.connect(_on_died)
 
 
 func take_damage(amount: int) -> void:
 	health.take_damage(amount)
+
+
+func _on_died() -> void:
+	Sfx.play(&"structure_down")
+	Events.structure_removed.emit(&"turret", global_position)
+	queue_free()
 
 
 func acquire_target() -> Node2D:

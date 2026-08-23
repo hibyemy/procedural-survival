@@ -4,6 +4,7 @@ extends CanvasLayer
 ## game-over screen. Owns the restart flow (R) which resets the run seed.
 
 const HP_BAR_SIZE := Vector2(220.0, 18.0)
+const MENU_SCENE := "res://src/menu/menu.tscn"
 
 var _hp_fill: ColorRect
 var _resources_label: Label
@@ -12,6 +13,8 @@ var _hint_label: Label
 var _message: Label
 
 var _restarting := false
+var _game_over := false
+var _won := false
 
 
 func _ready() -> void:
@@ -59,6 +62,7 @@ func _ready() -> void:
 	Events.player_died.connect(_on_player_died)
 	Events.wave_started.connect(_on_wave_started)
 	Events.build_mode_changed.connect(_on_build_mode_changed)
+	Events.run_won.connect(_on_run_won)
 	_refresh_resources()
 
 
@@ -67,13 +71,25 @@ func set_hp(current: int, maximum: int) -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
-	if _restarting or not event.is_action_pressed("restart"):
+	if _restarting:
 		return
-	_restarting = true
-	RngService.reset()
-	GameState.reset()
+	if event.is_action_pressed("restart"):
+		_restarting = true
+		if _won:
+			_return_to_menu()
+		else:
+			RngService.reset()
+			GameState.reset()
+			get_tree().paused = false
+			get_tree().reload_current_scene()
+	elif event.is_action_pressed("ui_cancel") and not _game_over and not _won:
+		_restarting = true
+		_return_to_menu()
+
+
+func _return_to_menu() -> void:
 	get_tree().paused = false
-	get_tree().reload_current_scene()
+	get_tree().change_scene_to_file.call_deferred(MENU_SCENE)
 
 
 func _make_label(parent: Node, font_size: int) -> Label:
@@ -94,8 +110,8 @@ func _refresh_resources() -> void:
 	_resources_label.text = "SCRAP %d    CELLS %d" % [GameState.get_count(&"scrap"), GameState.get_count(&"cells")]
 
 
-func _on_wave_started(number: int) -> void:
-	_wave_label.text = "WAVE %d" % number
+func _on_wave_started(number: int, heavy: bool) -> void:
+	_wave_label.text = "WAVE %d%s" % [number, "!" if heavy else ""]
 
 
 func _on_build_mode_changed(enabled: bool, blueprint_kind: StringName) -> void:
@@ -106,6 +122,16 @@ func _on_build_mode_changed(enabled: bool, blueprint_kind: StringName) -> void:
 
 
 func _on_player_died() -> void:
-	_message.text = "YOU DIED\n\npress R to retry"
+	_game_over = true
+	_message.text = "YOU DIED\n\npress R to retry   ESC for menu"
+	_message.visible = true
+	get_tree().paused = true
+
+
+func _on_run_won() -> void:
+	if _game_over:
+		return
+	_won = true
+	_message.text = "SECTOR SECURED\n\npress R for menu"
 	_message.visible = true
 	get_tree().paused = true

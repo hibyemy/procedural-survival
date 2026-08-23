@@ -51,4 +51,5 @@ func collect() -> void:
 	_collected = true
 	GameState.add(kind, amount)
 	Events.loot_collected.emit(kind, amount)
+	Sfx.play(&"pickup", -4.0)
 	queue_free()

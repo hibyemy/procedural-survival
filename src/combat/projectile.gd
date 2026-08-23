@@ -40,4 +40,5 @@ func _on_body_entered(body: Node) -> void:
 		return
 	if body.has_method("take_damage"):
 		body.take_damage(damage)
+		Sfx.play(&"impact", -6.0)
 		queue_free()

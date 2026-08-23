@@ -69,6 +69,7 @@ func fire(direction: Vector2) -> Projectile:
 	bullet.position = global_position + bullet.direction * 18.0
 	var parent := projectile_parent if projectile_parent != null else get_parent()
 	parent.add_child(bullet)
+	Sfx.play(&"shoot", -8.0)
 	return bullet
 
 
@@ -85,6 +86,7 @@ func _try_fire() -> void:
 
 func _on_health_changed(current: int, maximum: int) -> void:
 	Events.player_health_changed.emit(current, maximum)
+	Sfx.play(&"hurt", -4.0)
 
 
 func _on_health_died() -> void:

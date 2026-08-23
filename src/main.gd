@@ -9,14 +9,21 @@ const WALL_THICKNESS := 64.0
 
 
 func _ready() -> void:
-	RngService.reset()
+	RngService.reset(RunState.seed_override if RunState.seed_override != 0 else RngService.DEFAULT_SEED)
 	GameState.reset()
 
 	var level := Node2D.new()
 	level.name = "Level"
 	add_child(level)
 
-	_build_terrain(level)
+	var nav := NavService.new()
+	nav.name = "NavService"
+	add_child(nav)
+	nav.setup(ARENA_RECT)
+
+	_build_terrain(level, nav)
+	Events.building_placed.connect(nav.mark_solid)
+	Events.structure_removed.connect(func(_kind: StringName, at_position: Vector2) -> void: nav.clear_solid(at_position))
 
 	var player := Player.new()
 	player.name = "Player"
@@ -45,6 +52,7 @@ func _ready() -> void:
 	wave_director.container = level
 	wave_director.player = player
 	wave_director.arena_rect = ARENA_RECT
+	wave_director.nav_service = nav
 	add_child(wave_director)
 	wave_director.start()
 
@@ -53,10 +61,12 @@ func _ready() -> void:
 	add_child(hud)
 	hud.set_hp(player.health.current, player.health.max_health)
 
+	MusicDirector.play_track(&"exploration")
+
 	print("main: booted ok")
 
 
-func _build_terrain(level: Node2D) -> void:
+func _build_terrain(level: Node2D, nav: NavService) -> void:
 	var ground := Polygon2D.new()
 	ground.polygon = PolyShapes.rect(ARENA_RECT.size)
 	ground.color = Color(0.12, 0.16, 0.12)
@@ -90,7 +100,9 @@ func _build_terrain(level: Node2D) -> void:
 		if not clear:
 			continue
 		placed.append(point)
-		_add_rock(level, point, rng.randf_range(24.0, 46.0))
+		var radius := rng.randf_range(24.0, 46.0)
+		_add_rock(level, point, radius)
+		nav.mark_circle(point, radius)
 
 
 func _add_block(level: Node2D, rect: Rect2, color: Color) -> void:
