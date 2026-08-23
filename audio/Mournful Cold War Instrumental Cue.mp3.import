@@ -1,0 +1,19 @@
+[remap]
+
+importer="mp3"
+type="AudioStreamMP3"
+uid="uid://ysnft2udork7"
+path="res://.godot/imported/Mournful Cold War Instrumental Cue.mp3-ffdda331c71b03887b8fcf0a858430b8.mp3str"
+
+[deps]
+
+source_file="res://audio/Mournful Cold War Instrumental Cue.mp3"
+dest_files=["res://.godot/imported/Mournful Cold War Instrumental Cue.mp3-ffdda331c71b03887b8fcf0a858430b8.mp3str"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

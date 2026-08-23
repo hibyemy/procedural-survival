@@ -12,3 +12,5 @@ signal building_placed(kind: StringName, at_position: Vector2)
 signal structure_removed(kind: StringName, at_position: Vector2)
 signal build_mode_changed(enabled: bool, blueprint_kind: StringName)
 signal run_won
+signal boss_defeated(boss_id: StringName)
+signal objective_failed(reason: String)

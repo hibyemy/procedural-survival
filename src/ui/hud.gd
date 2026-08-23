@@ -5,16 +5,24 @@ extends CanvasLayer
 
 const HP_BAR_SIZE := Vector2(220.0, 18.0)
 const MENU_SCENE := "res://src/menu/menu.tscn"
+const STATUS_CLEAR_SECONDS := 2.5
 
 var _hp_fill: ColorRect
 var _resources_label: Label
 var _wave_label: Label
 var _hint_label: Label
 var _message: Label
+var _objective_label: Label
+var _status_label: Label
+var _card: PanelContainer
+var _card_title: Label
+var _card_body: Label
 
 var _restarting := false
 var _game_over := false
 var _won := false
+var _failed := false
+var _next_chapter := 0
 
 
 func _ready() -> void:
@@ -42,11 +50,20 @@ func _ready() -> void:
 	hp_background.add_child(_hp_fill)
 
 	_wave_label = _make_label(top_left, 18)
+	_objective_label = _make_label(top_left, 15)
+	_objective_label.modulate = Color(1.0, 0.9, 0.6)
 	_resources_label = _make_label(top_left, 18)
 	_hint_label = _make_label(root_ui, 15)
 	_hint_label.position = Vector2(16.0, -30.0)
 	_hint_label.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
 	_hint_label.grow_vertical = Control.GROW_DIRECTION_BEGIN
+
+	_status_label = _make_label(root_ui, 20)
+	_status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_status_label.set_anchors_preset(Control.PRESET_CENTER_TOP)
+	_status_label.position.y = 48.0
+
+	_build_card(root_ui)
 
 	_message = Label.new()
 	_message.text = ""
@@ -63,7 +80,62 @@ func _ready() -> void:
 	Events.wave_started.connect(_on_wave_started)
 	Events.build_mode_changed.connect(_on_build_mode_changed)
 	Events.run_won.connect(_on_run_won)
+	Events.objective_failed.connect(_on_objective_failed)
 	_refresh_resources()
+
+
+func set_objective(text: String) -> void:
+	_objective_label.text = text
+
+
+## Short-lived top-center announcement (EMP warnings, dark cycles...).
+func show_status(text: String) -> void:
+	_status_label.text = text
+	get_tree().create_timer(STATUS_CLEAR_SECONDS, true).timeout.connect(_clear_status_if_match.bind(text))
+
+
+func _clear_status_if_match(text: String) -> void:
+	if _status_label.text == text:
+		_status_label.text = ""
+
+
+## Full-screen interlude card (chapter intro/outro). Auto-hides.
+func show_card(title: String, body: String, seconds := 5.0) -> void:
+	_card_title.text = title
+	_card_body.text = body
+	_card.visible = true
+	get_tree().create_timer(seconds, false).timeout.connect(_hide_card)
+
+
+func _hide_card() -> void:
+	_card.visible = false
+
+
+func _build_card(parent: Control) -> void:
+	_card = PanelContainer.new()
+	_card.visible = false
+	_card.set_anchors_preset(Control.PRESET_CENTER)
+	_card.custom_minimum_size = Vector2(520.0, 0.0)
+	var margin := MarginContainer.new()
+	margin.add_theme_constant_override("margin_left", 24)
+	margin.add_theme_constant_override("margin_right", 24)
+	margin.add_theme_constant_override("margin_top", 16)
+	margin.add_theme_constant_override("margin_bottom", 16)
+	_card.add_child(margin)
+	var column := VBoxContainer.new()
+	column.add_theme_constant_override("separation", 8)
+	margin.add_child(column)
+	_card_title = Label.new()
+	_card_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_card_title.add_theme_font_size_override("font_size", 28)
+	column.add_child(_card_title)
+	_card_body = Label.new()
+	_card_body.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_card_body.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_card_body.custom_minimum_size = Vector2(480.0, 0.0)
+	_card_body.add_theme_font_size_override("font_size", 15)
+	column.add_child(_card_body)
+	parent.add_child(_card)
 
 
 func set_hp(current: int, maximum: int) -> void:
@@ -76,15 +148,25 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("restart"):
 		_restarting = true
 		if _won:
-			_return_to_menu()
+			if _next_chapter > 0:
+				RunState.configure_story(_next_chapter)
+				get_tree().paused = false
+				get_tree().reload_current_scene()
+			else:
+				_return_to_menu()
 		else:
 			RngService.reset()
 			GameState.reset()
 			get_tree().paused = false
 			get_tree().reload_current_scene()
-	elif event.is_action_pressed("ui_cancel") and not _game_over and not _won:
+	elif event.is_action_pressed("ui_cancel") and not _game_over and not _won and not _failed:
 		_restarting = true
 		_return_to_menu()
+
+
+## Story flow: what "R" does after a win. 0 = campaign complete -> menu.
+func prepare_advance(next_chapter: int) -> void:
+	_next_chapter = next_chapter
 
 
 func _return_to_menu() -> void:
@@ -128,10 +210,35 @@ func _on_player_died() -> void:
 	get_tree().paused = true
 
 
-func _on_run_won() -> void:
-	if _game_over:
+func _on_objective_failed(reason: String) -> void:
+	if _failed or _won or _game_over:
 		return
-	_won = true
-	_message.text = "SECTOR SECURED\n\npress R for menu"
+	_failed = true
+	_message.text = "OBJECTIVE FAILED - %s\n\npress R to retry" % reason
 	_message.visible = true
 	get_tree().paused = true
+
+
+func _on_run_won() -> void:
+	if _game_over or _failed:
+		return
+	_won = true
+	SaveGame.unlock_chapter(maxi(RunState.chapter + 1, 1))
+	if RunState.chapter >= ChapterCatalog.count():
+		_message.text = "SIGNAL RESTORED\n\nthe zone answers - campaign complete\n\npress R for menu"
+	else:
+		_message.text = "%s SECURED\n\nnext: CH.%d %s\n\npress R to continue   ESC for menu" % [
+			config_title().to_upper(), _next_chapter, next_title()]
+	_message.visible = true
+	get_tree().paused = true
+
+
+func config_title() -> String:
+	var config := ChapterCatalog.get_chapter(RunState.chapter)
+	return config.title
+
+
+func next_title() -> String:
+	if _next_chapter < 1 or _next_chapter > ChapterCatalog.count():
+		return ""
+	return ChapterCatalog.get_chapter(_next_chapter).title

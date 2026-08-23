@@ -1,12 +1,16 @@
 extends Control
-## Main menu: mode selection, settings (audio volumes, fullscreen, seed) and
-## quit. Settings persist to user://settings.cfg via SettingsStore.
+## Main menu: mode selection, chapter select, settings (audio volumes,
+## fullscreen, seed) and quit. Settings persist via SettingsStore, campaign
+## progress via SaveGame.
 
 const GAME_SCENE := "res://src/main.tscn"
 const MENU_MUSIC := &"menu"
 
 var settings := SettingsStore.new()
+var unlocked_chapter := 1
 
+var _main_buttons: Array[Button] = []
+var _chapter_panel: PanelContainer
 var _settings_panel: PanelContainer
 var _seed_input: LineEdit
 var _master_slider: HSlider
@@ -17,21 +21,27 @@ var _fullscreen_check: CheckButton
 
 func _ready() -> void:
 	set_anchors_preset(Control.PRESET_FULL_RECT)
-	_build_ui()
+	unlocked_chapter = SaveGame.load_unlocked_chapter()
 	settings.load_settings()
 	settings.apply()
+	_build_ui()
+	_build_settings_panel()
 	MusicDirector.play_track(MENU_MUSIC)
 
 
 ## Sets up RunState for the chosen mode and returns the scene to load.
-func prepare_run(mode: StringName) -> StringName:
-	var custom_seed := 0
-	var text := _seed_input.text.strip_edges()
-	if text.is_valid_int():
-		custom_seed = maxi(int(text), 0)
-	var target := RunState.STORY_TARGET_WAVES if RunState.is_mode_story(mode) else 0
-	RunState.configure(mode, target, custom_seed)
+func prepare_run(mode: StringName, run_chapter: int) -> StringName:
+	var custom_seed := _parse_seed()
+	if mode == RunState.MODE_STORY:
+		RunState.configure_story(run_chapter, custom_seed)
+	else:
+		RunState.configure_endless(custom_seed)
 	return GAME_SCENE
+
+
+func _parse_seed() -> int:
+	var text := _seed_input.text.strip_edges()
+	return maxi(int(text), 0) if text.is_valid_int() else 0
 
 
 func start_game(scene_path: StringName) -> void:
@@ -39,22 +49,17 @@ func start_game(scene_path: StringName) -> void:
 	get_tree().change_scene_to_file.call_deferred(String(scene_path))
 
 
-func _on_story_pressed() -> void:
-	_launch(RunState.MODE_STORY)
-
-
-func _on_endless_pressed() -> void:
-	_launch(RunState.MODE_ENDLESS)
-
-
-func _launch(mode: StringName) -> void:
+func _launch(mode: StringName, run_chapter: int = 1) -> void:
 	Sfx.play(&"ui_click")
-	start_game(prepare_run(mode))
+	start_game(prepare_run(mode, run_chapter))
 
 
 func _unhandled_input(event: InputEvent) -> void:
-	if event.is_action_pressed("ui_cancel") and _settings_panel.visible:
-		_close_settings()
+	if event.is_action_pressed("ui_cancel"):
+		if _settings_panel.visible or _chapter_panel.visible:
+			Sfx.play(&"ui_back")
+			_settings_panel.visible = false
+			_chapter_panel.visible = false
 
 
 func _open_settings() -> void:
@@ -67,6 +72,16 @@ func _close_settings() -> void:
 	_sync_from_widgets()
 	settings.save_settings()
 	_settings_panel.visible = false
+
+
+func _open_chapters() -> void:
+	Sfx.play(&"ui_click")
+	_chapter_panel.visible = true
+
+
+func _close_chapters() -> void:
+	Sfx.play(&"ui_back")
+	_chapter_panel.visible = false
 
 
 func _sync_from_widgets() -> void:
@@ -96,29 +111,77 @@ func _build_ui() -> void:
 	layout.add_child(title)
 
 	var subtitle := Label.new()
-	subtitle.text = "the machines never got the memo"
+	subtitle.text = "the machines never got the memo   |   best endless wave: %d" % SaveGame.load_best_endless_wave()
 	subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	subtitle.add_theme_font_size_override("font_size", 16)
 	subtitle.modulate = Color(1, 1, 1, 0.55)
 	layout.add_child(subtitle)
 
 	layout.add_child(_make_spacer(24))
-	var story_button := _make_button("STORY MODE", _on_story_pressed)
+	var story_button := _make_button("STORY MODE", _open_chapters)
 	layout.add_child(story_button)
 	story_button.grab_focus()
-	layout.add_child(_make_button("ENDLESS MODE", _on_endless_pressed))
-	layout.add_child(_make_button("SETTINGS", _open_settings))
-	layout.add_child(_make_button("QUIT", func() -> void: get_tree().quit()))
+	_main_buttons.append(story_button)
+	var endless_button := _make_button("ENDLESS MODE", func() -> void: _launch(RunState.MODE_ENDLESS))
+	layout.add_child(endless_button)
+	_main_buttons.append(endless_button)
+	var settings_button := _make_button("SETTINGS", _open_settings)
+	layout.add_child(settings_button)
+	_main_buttons.append(settings_button)
+	var quit_button := _make_button("QUIT", func() -> void: get_tree().quit())
+	layout.add_child(quit_button)
+	_main_buttons.append(quit_button)
 	layout.add_child(_make_spacer(40))
 
-	_build_settings_panel()
+	_build_chapter_panel()
+
+
+func _build_chapter_panel() -> void:
+	_chapter_panel = PanelContainer.new()
+	_chapter_panel.visible = false
+	_chapter_panel.set_anchors_preset(Control.PRESET_FULL_RECT)
+	add_child(_chapter_panel)
+
+	var margin := MarginContainer.new()
+	margin.add_theme_constant_override("margin_left", 96)
+	margin.add_theme_constant_override("margin_right", 96)
+	margin.add_theme_constant_override("margin_top", 40)
+	margin.add_theme_constant_override("margin_bottom", 40)
+	_chapter_panel.add_child(margin)
+
+	var column := VBoxContainer.new()
+	column.add_theme_constant_override("separation", 8)
+	margin.add_child(column)
+
+	var heading := Label.new()
+	heading.text = "SELECT SECTOR"
+	heading.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	heading.add_theme_font_size_override("font_size", 32)
+	column.add_child(heading)
+
+	for config in ChapterCatalog.all():
+		var locked := config.id > unlocked_chapter
+		var label_text := "CH.%d  %s" % [config.id, config.title]
+		if locked:
+			label_text += "  (LOCKED)"
+		var button := Button.new()
+		button.text = label_text
+		button.disabled = locked
+		button.custom_minimum_size = Vector2(420.0, 36.0)
+		var target_id := config.id
+		button.pressed.connect(func() -> void: _launch(RunState.MODE_STORY, target_id))
+		column.add_child(button)
+
+	column.add_child(_make_spacer(12))
+	column.add_child(_make_button("BACK", _close_chapters))
 
 
 func _build_settings_panel() -> void:
-	_settings_panel = PanelContainer.new()
-	_settings_panel.visible = false
-	_settings_panel.set_anchors_preset(Control.PRESET_FULL_RECT)
-	add_child(_settings_panel)
+	var panel_root := PanelContainer.new()
+	panel_root.visible = false
+	panel_root.set_anchors_preset(Control.PRESET_FULL_RECT)
+	add_child(panel_root)
+	_settings_panel = panel_root
 
 	var margin := MarginContainer.new()
 	margin.add_theme_constant_override("margin_left", 64)

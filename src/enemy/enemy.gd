@@ -8,9 +8,16 @@ const CONTACT_PAD := 14.0
 const ATTACK_COOLDOWN := 0.8
 const REPATH_INTERVAL := 0.45
 const WAYPOINT_RADIUS := 18.0
+const GUNNER_FIRE_RANGE := 220.0
+const GUNNER_MIN_RANGE := 150.0
+const GUNNER_COOLDOWN := 1.6
+const DRONE_HEAL_INTERVAL := 1.0
 const KIND_STATS := {
 	&"chaser": {"health": 3, "speed": 130.0, "damage": 1, "radius": 12.0, "color": Color(0.9, 0.35, 0.3)},
 	&"brute": {"health": 12, "speed": 75.0, "damage": 2, "radius": 22.0, "color": Color(0.62, 0.25, 0.55)},
+	&"skirmisher": {"health": 2, "speed": 195.0, "damage": 1, "radius": 10.0, "color": Color(0.85, 0.82, 0.6)},
+	&"gunner": {"health": 5, "speed": 95.0, "damage": 1, "radius": 14.0, "color": Color(0.45, 0.6, 0.78)},
+	&"repair_drone": {"health": 4, "speed": 150.0, "damage": 0, "radius": 11.0, "color": Color(0.35, 0.8, 0.85)},
 }
 
 var kind: StringName = &"chaser"
@@ -24,6 +31,8 @@ var _radius := 12.0
 var _attack_cooldown := 0.0
 var _repath_cooldown := 0.0
 var _path := PackedVector2Array()
+var _sway_phase := 0.0
+var _heal_tick := 0.0
 
 
 func configure(enemy_kind: StringName) -> void:
@@ -78,9 +87,20 @@ func _physics_process(delta: float) -> void:
 		velocity = Vector2.ZERO
 		return
 	var dist_to_target := global_position.distance_to(target.global_position)
-	velocity = _steering_direction(dist_to_target) * speed
+	match kind:
+		&"gunner":
+			velocity = _gunner_steering(dist_to_target) * speed
+		&"repair_drone":
+			velocity = _drone_steering() * speed
+			_tick_healing(delta)
+		_:
+			velocity = _steering_direction(dist_to_target) * speed
 	move_and_slide()
-	if _attack_cooldown > 0.0:
+	_run_contact_attacks(dist_to_target)
+
+
+func _run_contact_attacks(dist_to_target: float) -> void:
+	if contact_damage <= 0 or _attack_cooldown > 0.0:
 		return
 	if dist_to_target <= _radius + CONTACT_PAD:
 		if target.has_method("take_damage"):
@@ -98,6 +118,14 @@ func _physics_process(delta: float) -> void:
 
 ## Path-following when a NavService is wired, straight chase otherwise.
 func _steering_direction(dist_to_target: float) -> Vector2:
+	var direction := _nav_or_chase_direction(dist_to_target)
+	if kind == &"skirmisher" and direction != Vector2.ZERO:
+		direction = apply_sway(direction, _sway_phase)
+		_sway_phase += 0.12
+	return direction
+
+
+func _nav_or_chase_direction(dist_to_target: float) -> Vector2:
 	if nav_service == null:
 		return chase_direction(global_position, target.global_position)
 	if dist_to_target <= _radius + NavService.GRID:
@@ -110,6 +138,77 @@ func _steering_direction(dist_to_target: float) -> Vector2:
 	if _path.is_empty():
 		return chase_direction(global_position, target.global_position)
 	return (_path[0] - global_position).normalized()
+
+
+## Gunners hold a firing range: advance when far, retreat when crowded,
+## shoot while standing.
+func _gunner_steering(dist_to_target: float) -> Vector2:
+	if dist_to_target > GUNNER_FIRE_RANGE:
+		return _nav_or_chase_direction(dist_to_target)
+	if dist_to_target < GUNNER_MIN_RANGE:
+		return -chase_direction(global_position, target.global_position)
+	_try_gunner_shot()
+	return Vector2.ZERO
+
+
+func _try_gunner_shot() -> void:
+	if _attack_cooldown > 0.0:
+		return
+	_attack_cooldown = GUNNER_COOLDOWN
+	var bullet := Projectile.new()
+	bullet.target_mask = 1 | 8 | 32
+	bullet.direction = (target.global_position - global_position).normalized()
+	bullet.source = self
+	bullet.speed = 420.0
+	bullet.position = global_position + bullet.direction * 16.0
+	get_parent().add_child(bullet)
+	Sfx.play(&"turret_shot", -10.0)
+
+
+## Repair drones shadow the nearest damaged ally and heal it.
+func _drone_steering() -> Vector2:
+	var patient := _find_patient()
+	if patient == null:
+		return chase_direction(global_position, target.global_position) * 0.6
+	var dist := global_position.distance_to(patient.global_position)
+	if dist <= 40.0:
+		return Vector2.ZERO
+	return (patient.global_position - global_position).normalized()
+
+
+func _find_patient() -> Enemy:
+	var best: Enemy = null
+	var best_dist := INF
+	for node in get_tree().get_nodes_in_group("enemies"):
+		var ally := node as Enemy
+		if ally == null or ally == self or not is_instance_valid(ally) or ally.is_dead():
+			continue
+		if ally.health == null or ally.health.current >= ally.health.max_health:
+			continue
+		var d := global_position.distance_squared_to(ally.global_position)
+		if d < best_dist:
+			best_dist = d
+			best = ally
+	return best
+
+
+func _tick_healing(delta: float) -> void:
+	_heal_tick -= delta
+	if _heal_tick > 0.0:
+		return
+	_heal_tick = DRONE_HEAL_INTERVAL
+	var patient := _find_patient()
+	if patient != null and global_position.distance_to(patient.global_position) <= 56.0:
+		patient.health.heal(1)
+
+
+static func apply_sway(direction: Vector2, phase: float) -> Vector2:
+	return direction.rotated(sin(phase) * 0.7)
+
+
+## Gunners hold a firing range: advance when far, retreat when crowded.
+static func gunner_should_advance(dist: float) -> bool:
+	return dist > GUNNER_FIRE_RANGE
 
 
 func _on_health_died() -> void:

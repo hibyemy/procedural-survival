@@ -6,20 +6,35 @@ extends Node
 const GRID := 48
 const PLACE_DISTANCE := 168.0
 const CLEARANCE_RADIUS := 18.0
+const REPAIR_RANGE := 96.0
+const REPAIR_COST := 3
+const REPAIR_AMOUNT := 8
 
-const BLUEPRINTS: Array[Dictionary] = [
-	{"kind": &"wall", "costs": {&"scrap": 5}},
-	{"kind": &"turret", "costs": {&"scrap": 10, &"cells": 2}},
-]
+const WALL_BLUEPRINT := {"kind": &"wall", "costs": {&"scrap": 5}}
+const TURRET_BLUEPRINT := {"kind": &"turret", "costs": {&"scrap": 10, &"cells": 2}}
+const REPAIR_BLUEPRINT := {"kind": &"repair_kit", "costs": {&"scrap": REPAIR_COST}}
 
 var player: Node2D = null
 var container: Node = null
 var arena_rect := Rect2()
+## Blueprint roster for this run; the Repair Kit joins from Ch.3 on.
+var blueprints: Array[Dictionary] = [WALL_BLUEPRINT, TURRET_BLUEPRINT]
 
 var enabled := false
 var selection := 0
 
 var _ghost: Node2D
+
+
+func setup_blueprints(include_repair_kit: bool) -> void:
+	blueprints = [WALL_BLUEPRINT, TURRET_BLUEPRINT]
+	if include_repair_kit:
+		blueprints.append(REPAIR_BLUEPRINT)
+	selection = clampi(selection, 0, blueprints.size() - 1)
+
+
+func _is_repair_selection() -> bool:
+	return blueprint()["kind"] == &"repair_kit"
 
 
 func _ready() -> void:
@@ -29,27 +44,30 @@ func _ready() -> void:
 
 
 func blueprint() -> Dictionary:
-	return BLUEPRINTS[selection]
+	return blueprints[selection]
 
 
 func toggle() -> void:
 	enabled = not enabled
-	_ghost.visible = enabled
+	_ghost.visible = enabled and not _is_repair_selection()
 	if enabled:
 		_update_ghost_position()
 	Events.build_mode_changed.emit(enabled, blueprint()["kind"])
 
 
 func cycle_blueprint() -> void:
-	selection = (selection + 1) % BLUEPRINTS.size()
+	selection = (selection + 1) % blueprints.size()
 	_refresh_ghost_style()
 	if enabled:
+		_ghost.visible = not _is_repair_selection()
 		Events.build_mode_changed.emit(enabled, blueprint()["kind"])
 
 
 func try_place() -> bool:
 	if not enabled or player == null or not is_instance_valid(player):
 		return false
+	if _is_repair_selection():
+		return _try_repair()
 	var spot := _ghost.position
 	if not is_placeable_spot(spot, arena_rect):
 		return false
@@ -68,6 +86,38 @@ func try_place() -> bool:
 	Sfx.play(&"place", -4.0)
 	Events.building_placed.emit(blueprint()["kind"], spot)
 	return true
+
+
+## Repair Kit: patch the most damaged structure near the player instead of
+## placing anything.
+func _try_repair() -> bool:
+	var target := _nearest_damaged_structure()
+	if target == null:
+		Sfx.play(&"build_deny", -8.0)
+		return false
+	if not GameState.spend(REPAIR_BLUEPRINT["costs"]):
+		Sfx.play(&"build_deny", -6.0)
+		return false
+	target.health.heal(REPAIR_AMOUNT)
+	Sfx.play(&"place", -6.0)
+	return true
+
+
+func _nearest_damaged_structure() -> Node2D:
+	var best: Node2D = null
+	var best_dist := REPAIR_RANGE
+	for node in container.get_children():
+		var structure := node as Node2D
+		if structure == null or not (structure is Wall or structure is Turret):
+			continue
+		if structure.health == null or structure.health.is_dead() \
+				or structure.health.current >= structure.health.max_health:
+			continue
+		var dist := player.global_position.distance_to(structure.global_position)
+		if dist <= best_dist:
+			best_dist = dist
+			best = structure
+	return best
 
 
 static func snap_to_grid(value: Vector2) -> Vector2:

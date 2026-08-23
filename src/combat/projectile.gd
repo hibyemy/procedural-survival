@@ -9,11 +9,14 @@ var speed := 760.0
 var damage := 1
 var lifetime := 1.2
 var source: Node = null
+## Collision mask applied on ready: what this bullet can hit.
+## Player weapons default to enemy+world; enemy shots use player+building+world.
+var target_mask := 2 | 32
 
 
 func _ready() -> void:
 	collision_layer = 4
-	collision_mask = 2 | 32
+	collision_mask = target_mask
 	z_index = 5
 	var shape := CollisionShape2D.new()
 	var circle := CircleShape2D.new()

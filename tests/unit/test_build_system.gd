@@ -113,3 +113,55 @@ func test_turret_requires_cells_in_cost() -> void:
 	var costs: Dictionary = _system.blueprint()["costs"]
 	assert_true(costs.has(&"scrap"))
 	assert_true(costs.has(&"cells"))
+
+
+func test_repair_kit_joins_when_unlocked() -> void:
+	_system.setup_blueprints(false)
+	assert_eq(_system.blueprints.size(), 2)
+	_system.setup_blueprints(true)
+	var kinds := []
+	for bp in _system.blueprints:
+		kinds.append(bp["kind"])
+	assert_true(kinds.has(&"repair_kit"))
+
+
+func test_repair_selection_hides_ghost_and_repairs_wall() -> void:
+	GameState.add(&"scrap", 10)
+	_system.setup_blueprints(true)
+	_system.toggle()
+	while String(_system.blueprint()["kind"]) != "repair_kit":
+		_system.cycle_blueprint()
+	assert_false(_system._ghost.visible)
+
+	var wall := Wall.new()
+	wall.position = Vector2(150, 0)
+	_level.add_child(wall)
+	wall.health.take_damage(12)
+
+	assert_true(_system.try_place())
+	assert_eq(GameState.get_count(&"scrap"), 7)
+	assert_eq(wall.health.current, 16)
+
+
+func test_repair_denied_when_nothing_damaged() -> void:
+	GameState.add(&"scrap", 10)
+	_system.setup_blueprints(true)
+	_system.toggle()
+	while String(_system.blueprint()["kind"]) != "repair_kit":
+		_system.cycle_blueprint()
+	var before := GameState.get_count(&"scrap")
+	assert_false(_system.try_place())
+	assert_eq(GameState.get_count(&"scrap"), before)
+
+
+func test_repair_denied_when_unaffordable() -> void:
+	GameState.add(&"scrap", 0)
+	_system.setup_blueprints(true)
+	_system.toggle()
+	while String(_system.blueprint()["kind"]) != "repair_kit":
+		_system.cycle_blueprint()
+	var wall := Wall.new()
+	wall.position = Vector2(150, 0)
+	_level.add_child(wall)
+	wall.health.take_damage(5)
+	assert_false(_system.try_place())

@@ -1,0 +1,19 @@
+[remap]
+
+importer="mp3"
+type="AudioStreamMP3"
+uid="uid://cd5yjmb6i1jfo"
+path="res://.godot/imported/Cold War Analog Electronic Soundtrack.mp3-35840432a7c0807d7c8fd65fd85fbbd3.mp3str"
+
+[deps]
+
+source_file="res://audio/Cold War Analog Electronic Soundtrack.mp3"
+dest_files=["res://.godot/imported/Cold War Analog Electronic Soundtrack.mp3-35840432a7c0807d7c8fd65fd85fbbd3.mp3str"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

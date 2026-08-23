@@ -1,0 +1,19 @@
+[remap]
+
+importer="mp3"
+type="AudioStreamMP3"
+uid="uid://bii0a6n8qmtrw"
+path="res://.godot/imported/Ambient Ruined City Soundscape..mp3-fb8ed3ca76fbf73b89f95b2569e713a9.mp3str"
+
+[deps]
+
+source_file="res://audio/Ambient Ruined City Soundscape..mp3"
+dest_files=["res://.godot/imported/Ambient Ruined City Soundscape..mp3-fb8ed3ca76fbf73b89f95b2569e713a9.mp3str"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

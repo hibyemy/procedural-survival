@@ -5,17 +5,23 @@ extends Node
 const MODE_ENDLESS := &"endless"
 const MODE_STORY := &"story"
 
-const STORY_TARGET_WAVES := 8
-
 var mode: StringName = MODE_ENDLESS
-var target_waves := 0
+var chapter := 1
 var seed_override := 0
 
 
-func configure(run_mode: StringName, waves_target: int, custom_seed: int) -> void:
+func configure(run_mode: StringName, run_chapter: int, custom_seed: int) -> void:
 	mode = run_mode
-	target_waves = waves_target
+	chapter = maxi(run_chapter, 1)
 	seed_override = custom_seed
+
+
+func configure_endless(custom_seed: int = 0) -> void:
+	configure(MODE_ENDLESS, 1, custom_seed)
+
+
+func configure_story(run_chapter: int, custom_seed: int = 0) -> void:
+	configure(MODE_STORY, run_chapter, custom_seed)
 
 
 func is_story() -> bool:
@@ -27,6 +33,4 @@ static func is_mode_story(check_mode: StringName) -> bool:
 
 
 func reset_to_endless() -> void:
-	mode = MODE_ENDLESS
-	target_waves = 0
-	seed_override = 0
+	configure_endless(0)

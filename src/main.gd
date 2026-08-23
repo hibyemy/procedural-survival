@@ -1,14 +1,20 @@
 extends Node2D
-## Composition root: assembles terrain, player, systems and UI for one run.
-## All wiring happens here; systems themselves stay decoupled via Events.
+## Composition root: assembles terrain, player, systems and UI for one run
+## of the chapter selected in RunState (or an endless synthetic chapter).
+## All wiring happens here; systems stay decoupled via Events.
 
-const ARENA_RECT := Rect2(-1000.0, -600.0, 2000.0, 1200.0)
+var ARENA_RECT := Rect2(-1000.0, -600.0, 2000.0, 1200.0)
 const PLAYER_START := Vector2.ZERO
-const ROCK_COUNT := 12
 const WALL_THICKNESS := 64.0
+
+var config := ChapterConfig.new()
 
 
 func _ready() -> void:
+	config = _resolve_config()
+	ARENA_RECT = Rect2(-config.arena_size.x * 0.5, -config.arena_size.y * 0.5,
+			config.arena_size.x, config.arena_size.y)
+
 	RngService.reset(RunState.seed_override if RunState.seed_override != 0 else RngService.DEFAULT_SEED)
 	GameState.reset()
 
@@ -39,6 +45,7 @@ func _ready() -> void:
 	build_system.player = player
 	build_system.container = level
 	build_system.arena_rect = ARENA_RECT
+	build_system.setup_blueprints(config.repair_kit_unlocked)
 	add_child(build_system)
 
 	var loot_director := LootDirector.new()
@@ -53,17 +60,71 @@ func _ready() -> void:
 	wave_director.player = player
 	wave_director.arena_rect = ARENA_RECT
 	wave_director.nav_service = nav
+	wave_director.config = config
 	add_child(wave_director)
-	wave_director.start()
 
-	var hud := Hud.new()
+	if config.protect_target:
+		var relay := ObjectiveRelay.new()
+		relay.name = "RelayShack"
+		relay.position = Vector2(0, -ARENA_RECT.size.y * 0.5 + 176.0)
+		level.add_child(relay)
+		nav.mark_solid(relay.position)
+
+	if config.dark_cycles:
+		var dark_director := DarkCycleDirector.new()
+		dark_director.name = "DarkCycleDirector"
+		add_child(dark_director)
+		dark_director.setup(level)
+
+	var hud: Hud = null
+
+	if config.emp_pulses:
+		var emp_director := EmpPulseDirector.new()
+		emp_director.name = "EmpPulseDirector"
+		emp_director.turrets_parent = level
+		add_child(emp_director)
+		emp_director.pulse_warning.connect(func(seconds_left: float) -> void:
+			hud.show_status("EMP IN %d.." % ceili(seconds_left)))
+		emp_director.pulse_started.connect(func() -> void:
+			hud.show_status("TURRETS OFFLINE"))
+		emp_director.pulse_ended.connect(func() -> void:
+			hud.show_status("TURRETS ONLINE"))
+
+	hud = Hud.new()
 	hud.name = "Hud"
 	add_child(hud)
 	hud.set_hp(player.health.current, player.health.max_health)
+	hud.set_objective(_objective_text())
+	hud.prepare_advance(RunState.chapter + 1 if RunState.is_story() else 0)
+	hud.show_card("CH.%d  %s" % [config.id, config.title.to_upper()],
+			config.intro_text, 6.0)
 
 	MusicDirector.play_track(&"exploration")
 
-	print("main: booted ok")
+	print("main: booted ok ch%d %s" % [config.id, config.title])
+
+
+func _resolve_config() -> ChapterConfig:
+	if RunState.is_story():
+		return ChapterCatalog.get_chapter(RunState.chapter)
+	var synthetic := ChapterConfig.new()
+	synthetic.id = 0
+	synthetic.title = "Endless"
+	synthetic.style_name = "Ashfall Rust"
+	synthetic.target_waves = 999999
+	synthetic.brutes_from_wave = 3
+	synthetic.skirmishers_from_wave = 8
+	synthetic.gunners_from_wave = 12
+	synthetic.repair_drones_from_wave = 16
+	return synthetic
+
+
+func _objective_text() -> String:
+	if config.protect_target:
+		return "OBJECTIVE: PROTECT THE RELAY SHACK"
+	if config.has_boss():
+		return "OBJECTIVE: SURVIVE AND KILL THE %s" % String(config.boss_id).to_upper()
+	return "OBJECTIVE: HOLD UNTIL WAVE %d IS CLEARED" % config.target_waves
 
 
 func _build_terrain(level: Node2D, nav: NavService) -> void:
@@ -85,7 +146,7 @@ func _build_terrain(level: Node2D, nav: NavService) -> void:
 	var rng := RngService.stream(&"terrain")
 	var placed: Array[Vector2] = []
 	var attempts := 0
-	while placed.size() < ROCK_COUNT and attempts < 200:
+	while placed.size() < config.rock_count and attempts < 200:
 		attempts += 1
 		var point := Vector2(
 				rng.randf_range(ARENA_RECT.position.x + 160.0, ARENA_RECT.end.x - 160.0),

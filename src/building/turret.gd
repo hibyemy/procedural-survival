@@ -7,6 +7,9 @@ const FIRE_COOLDOWN := 0.9
 const FIRE_RANGE := 280.0
 
 var health: HealthComponent
+## EMP pulses and future effects flip this; a disabled turret neither aims
+## nor fires.
+var disabled := false
 
 var _cooldown := 0.0
 var _barrel: Polygon2D
@@ -62,6 +65,12 @@ func fire(direction: Vector2) -> Projectile:
 
 func _physics_process(delta: float) -> void:
 	_cooldown = maxf(_cooldown - delta, 0.0)
+	if disabled:
+		if _barrel != null:
+			_barrel.modulate = Color(0.5, 0.5, 0.55)
+		return
+	if _barrel != null:
+		_barrel.modulate = Color.WHITE
 	var target := acquire_target()
 	if target == null:
 		return
