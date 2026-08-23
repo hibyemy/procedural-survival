@@ -3,6 +3,9 @@ extends Node
 ## never reach across modules via direct node references.
 
 signal player_died
+signal player_health_changed(current: int, maximum: int)
 signal enemy_died(at_position: Vector2)
 signal loot_collected(kind: StringName, amount: int)
 signal wave_started(number: int)
+signal building_placed(kind: StringName)
+signal build_mode_changed(enabled: bool, blueprint_kind: StringName)
